@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: stg_vorgang
+    columns:
+      - name: vorgang_id
+        tests: [not_null, unique]
+      - name: aktualisiert
+        tests: [not_null]
+      - name: titel
+        tests: [not_null]
+      - name: wahlperiode
+        tests: [not_null]
+
+  - name: stg_vorgang_deskriptor
+    columns:
+      - name: vorgang_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_vorgang')
+                field: vorgang_id
+
+  - name: stg_vorgang_sachgebiet
+    columns:
+      - name: vorgang_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_vorgang')
+                field: vorgang_id
+
+  - name: stg_vorgangsposition
+    columns:
+      - name: vorgangsposition_id
+        tests: [not_null, unique]
+      - name: vorgang_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_vorgang')
+                field: vorgang_id
+      - name: fundstelle_dokumentart
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["Drucksache", "Plenarprotokoll"]
+              config:
+                severity: warn
+
+  - name: stg_drucksache
+    columns:
+      - name: drucksache_id
+        tests: [not_null, unique]
+
+  - name: stg_plenarprotokoll
+    columns:
+      - name: plenarprotokoll_id
+        tests: [not_null, unique]

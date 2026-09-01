@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "DIP-Analyzer",
+			"path": "."
+		},
+		{
+			"name": "models",
+			"path": "../Downloads/dip_dbt/dip_dbt/models"
+		}
+	],
+	"settings": {}
+}

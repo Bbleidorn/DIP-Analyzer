@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: mart_vorgang
+    description: >
+      Ein Vorgang pro Zeile mit verdichteten Kennzahlen zu Vorgangspositionen,
+      verknüpften Drucksachen/Plenarprotokollen sowie Sachgebieten/Deskriptoren.
+    columns:
+      - name: vorgang_id
+        tests: [not_null, unique]
+      - name: titel
+        tests: [not_null]
+      - name: anzahl_vorgangspositionen
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: true

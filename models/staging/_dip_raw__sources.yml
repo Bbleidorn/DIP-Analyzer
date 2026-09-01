@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: dip_raw
+    database: dip_raw
+    schema: main
+    description: >
+      Rohdaten aus der DIP-API, per Jupyter-Notebook 1:1 in SQLite geladen
+      (id, aktualisiert, wenige Kernspalten, vollständiger raw_json-Blob).
+    tables:
+      - name: vorgang
+        columns:
+          - name: id
+            tests: [not_null, unique]
+          - name: aktualisiert
+            tests: [not_null]
+      - name: vorgangsposition
+        columns:
+          - name: id
+            tests: [not_null, unique]
+          - name: vorgang_id
+            tests: [not_null]
+      - name: drucksache
+        columns:
+          - name: id
+            tests: [not_null, unique]
+      - name: plenarprotokoll
+        columns:
+          - name: id
+            tests: [not_null, unique]
