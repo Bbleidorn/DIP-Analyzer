@@ -16,3 +16,14 @@ models:
               arguments:
                 min_value: 0
                 inclusive: true
+                
+  - name: mart_fruehwarnsystem
+    description: >
+      Alle Vorgangsschritte der letzten 3 Tage (rollierendes Fenster, immer relativ
+      zum Abfragezeitpunkt) inkl. Urheber und Beschlussfassung. Grundlage für den
+      taeglichen Fruehwarnsystem-Bericht.
+    columns:
+      - name: vorgangsposition_id
+        tests: [not_null, unique]
+      - name: vorgang_id
+        tests: [not_null]

@@ -49,6 +49,24 @@ models:
               config:
                 severity: warn
 
+  - name: stg_vorgangsposition_urheber
+    columns:
+      - name: vorgangsposition_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_vorgangsposition')
+                field: vorgangsposition_id
+
+  - name: stg_vorgangsposition_beschlussfassung
+    columns:
+      - name: vorgangsposition_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_vorgangsposition')
+                field: vorgangsposition_id
+
   - name: stg_drucksache
     columns:
       - name: drucksache_id
