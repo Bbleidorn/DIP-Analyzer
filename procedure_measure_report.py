@@ -13,38 +13,38 @@ GEMINI_MODEL = "gemini-3.6-flash"
 REPORT_DIR = Path(os.environ.get("DIP_REPORT_DIR", "reports"))
 
 
-def load_letzte_entwicklungen():
+def load_recent_developments():
     if not DIP_SQLITE_PATH:
         raise RuntimeError("DIP_SQLITE_PATH ist nicht gesetzt - wird für den Attach der Rohdaten benötigt")
 
     con = duckdb.connect(DUCKDB_PATH, read_only=True)
     con.execute(f"ATTACH '{DIP_SQLITE_PATH}' AS dip_raw (TYPE SQLITE, READ_ONLY)")
-    ergebnis = con.execute("select * from main.mart_fruehwarnsystem").fetchall()
-    spalten = [beschreibung[0] for beschreibung in con.description]
+    result = con.execute("select * from main.mart_fruehwarnsystem").fetchall()
+    columns = [description[0] for description in con.description]
     con.close()
-    return [dict(zip(spalten, zeile)) for zeile in ergebnis]
+    return [dict(zip(columns, row)) for row in result]
 
 
-def berechne_kpis(entwicklungen):
-    betroffene_vorgaenge = {eintrag["vorgang_id"] for eintrag in entwicklungen}
+def calculate_kpis(developments):
+    affected_procedures = {entry["vorgang_id"] for entry in developments}
     return {
-        "anzahl_vorgaenge": len(betroffene_vorgaenge),
-        "anzahl_aenderungen": len(entwicklungen),
+        "anzahl_vorgaenge": len(affected_procedures),
+        "anzahl_aenderungen": len(developments),
     }
 
 
-def baue_gemini_prompt(entwicklungen):
+def build_gemini_prompt(developments):
     items = [
         {
-            "vorgang": eintrag["vorgang_titel"],
-            "vorgangstyp": eintrag["vorgangstyp"],
-            "beratungsstand": eintrag["beratungsstand"],
-            "schritt": eintrag["vorgangsposition_titel"],
-            "datum": str(eintrag["position_datum"]),
-            "urheber": eintrag["urheber"],
-            "beschluesse": eintrag["beschluesse"],
+            "vorgang": entry["vorgang_titel"],
+            "vorgangstyp": entry["vorgangstyp"],
+            "beratungsstand": entry["beratungsstand"],
+            "schritt": entry["vorgangsposition_titel"],
+            "datum": str(entry["position_datum"]),
+            "urheber": entry["urheber"],
+            "beschluesse": entry["beschluesse"],
         }
-        for eintrag in entwicklungen
+        for entry in developments
     ]
     return (
         "Du erstellst ein taegliches Fruehwarnsystem-Briefing zu parlamentarischen Vorgaengen "
@@ -70,59 +70,59 @@ def request_gemini_summary(prompt):
     return response.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
-def formatiere_detailzeile(eintrag):
-    zeile = (
-        f"- **{eintrag['vorgang_titel']}** ({eintrag['vorgangstyp']}, {eintrag['beratungsstand']}): "
-        f"{eintrag['vorgangsposition_titel']} am {eintrag['position_datum']}"
+def format_detail_line(entry):
+    line = (
+        f"- **{entry['vorgang_titel']}** ({entry['vorgangstyp']}, {entry['beratungsstand']}): "
+        f"{entry['vorgangsposition_titel']} am {entry['position_datum']}"
     )
-    if eintrag["urheber"]:
-        zeile += f" — Urheber: {eintrag['urheber']}"
-    if eintrag["beschluesse"]:
-        zeile += f" — Beschluss: {eintrag['beschluesse']}"
-    return zeile
+    if entry["urheber"]:
+        line += f" — Urheber: {entry['urheber']}"
+    if entry["beschluesse"]:
+        line += f" — Beschluss: {entry['beschluesse']}"
+    return line
 
 
-def schreibe_bericht(kpis, zusammenfassung, entwicklungen):
+def write_report(kpis, summary, developments):
     REPORT_DIR.mkdir(exist_ok=True)
-    heute = date.today().isoformat()
-    pfad = REPORT_DIR / f"fruehwarnsystem_{heute}.md"
+    today = date.today().isoformat()
+    path = REPORT_DIR / f"fruehwarnsystem_{today}.md"
 
-    zeilen = [
-        f"# Frühwarnsystem Rente/Altersvorsorge – {heute}",
+    lines = [
+        f"# Frühwarnsystem Rente/Altersvorsorge – {today}",
         "",
         "## Kennzahlen (letzte 3 Tage)",
         f"- Betroffene Vorgänge: {kpis['anzahl_vorgaenge']}",
         f"- Vorgangsschritte/Änderungen: {kpis['anzahl_aenderungen']}",
         "",
         "## Zusammenfassung",
-        zusammenfassung,
+        summary,
         "",
         "## Details",
     ]
-    zeilen.extend(formatiere_detailzeile(eintrag) for eintrag in entwicklungen)
+    lines.extend(format_detail_line(entry) for entry in developments)
 
-    pfad.write_text("\n".join(zeilen), encoding="utf-8")
-    return pfad
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
 
 
-def fruehwarnsystem_erstellen():
-    entwicklungen = load_letzte_entwicklungen()
-    kpis = berechne_kpis(entwicklungen)
+def create_early_warning_report():
+    developments = load_recent_developments()
+    kpis = calculate_kpis(developments)
 
-    if not entwicklungen:
-        zusammenfassung = "Keine Änderungen in den letzten 3 Tagen."
+    if not developments:
+        summary = "Keine Änderungen in den letzten 3 Tagen."
     elif GEMINI_KEY:
-        zusammenfassung = request_gemini_summary(baue_gemini_prompt(entwicklungen))
+        summary = request_gemini_summary(build_gemini_prompt(developments))
     else:
-        zusammenfassung = (
+        summary = (
             "GEMINI_KEY nicht gesetzt — automatische Zusammenfassung übersprungen, "
             "Details siehe unten."
         )
 
-    pfad = schreibe_bericht(kpis, zusammenfassung, entwicklungen)
-    print(f"Frühwarnsystem-Bericht geschrieben: {pfad}")
-    return pfad
+    path = write_report(kpis, summary, developments)
+    print(f"Frühwarnsystem-Bericht geschrieben: {path}")
+    return path
 
 
 if __name__ == "__main__":
-    fruehwarnsystem_erstellen()
+    create_early_warning_report()
